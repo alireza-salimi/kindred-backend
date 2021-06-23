@@ -50,7 +50,8 @@ INSTALLED_APPS = [
     'users',
     'django_rq',
     'rest_framework',
-    'corsheaders'
+    'corsheaders',
+    'phonenumber_field',
 ]
 
 MIDDLEWARE = [
@@ -170,3 +171,9 @@ queue = django_rq.get_queue('default', connection=redis_cursor , autocommit=True
 # CORS
 
 CORS_ALLOW_ALL_ORIGINS = True
+
+AUTH_USER_MODEL = 'users.User'
+
+PHONENUMBER_DB_FORMAT = 'INTERNATIONAL'
+
+DEFAULT_AUTO_FIELD='django.db.models.AutoField'
