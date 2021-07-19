@@ -16,7 +16,7 @@ class MyUserAdmin(UserAdmin):
             'fields': ('date_joined', 'last_login')
         }),
         (_('Other information'), {
-            'fields': ('is_staff', 'is_active', 'is_superuser', 'is_verified', 'user_permissions')
+            'fields': ('is_staff', 'is_active', 'is_superuser', 'user_permissions')
         })
     )
     add_fieldsets = (

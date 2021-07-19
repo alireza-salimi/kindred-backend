@@ -29,7 +29,6 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractUser):
-    is_verified = models.BooleanField(default=True, verbose_name=_('Is verified'))
     first_name = models.CharField(max_length=200, verbose_name=_('First name'))
     last_name = models.CharField(max_length=200, verbose_name=_('Last name'))
     date_of_birth = models.DateField(verbose_name=_('Date of birth'), null=True, blank=True)
@@ -43,4 +42,4 @@ class User(AbstractUser):
     objects = UserManager()
 
     def __str__(self):
-        return str(self.first_name + ' ' + self.last_name)
+        return str(self.first_name + ' ' + self.last_name) + ' ' + str(self.phone_number)
