@@ -34,7 +34,10 @@ class User(AbstractUser):
     date_of_birth = models.DateField(verbose_name=_('Date of birth'), null=True, blank=True)
     phone_number = PhoneNumberField(unique=True, verbose_name=_('Phone number'))
     image = models.ImageField(upload_to='images/', verbose_name=_('Image'), blank=True, null=True)
-    
+    default_kindred = models.ForeignKey(
+        'kindred.Kindred', on_delete=models.SET_NULL, related_name='default_for_users',
+        blank=True, null=True, verbose_name=_('Default kindred')
+    )
     
     USERNAME_FIELD = 'phone_number'
     REQUIRED_FIELDS = ['first_name', 'last_name']

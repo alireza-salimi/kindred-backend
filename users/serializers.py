@@ -34,7 +34,6 @@ class UserConfirmSignupSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         user_data = cache_db.hgetall(str(attrs['phone_number']))
-        print(user_data)
         if not user_data or int(user_data['otp']) != attrs['otp']:
             raise serializers.ValidationError(_('OTP may be invalid or expired.'))
         return attrs
@@ -42,14 +41,15 @@ class UserConfirmSignupSerializer(serializers.Serializer):
     def save(self, **kwargs):
         user_data = cache_db.hgetall(str(self.validated_data['phone_number']))
         cache_db.delete(str(self.validated_data['phone_number']))
+        kindred = Kindred.objects.create(
+            name=user_data['first_name'] + ' ' + user_data['last_name'] + "'s kindred"
+        )
         user = User.objects.create(
             phone_number=self.validated_data['phone_number'],
             first_name=user_data['first_name'],
             last_name=user_data['last_name'],
-            date_of_birth=user_data['date_of_birth']
-        )
-        kindred = Kindred.objects.create(
-            name=user_data['first_name'] + ' ' + user_data['last_name'] + "'s kindred"
+            date_of_birth=user_data['date_of_birth'],
+            default_kindred=kindred
         )
         kindred_member = KindredMember.objects.create(
             user=user,
@@ -58,6 +58,39 @@ class UserConfirmSignupSerializer(serializers.Serializer):
             is_admin=True
         )
         return kindred_member
+
+
+class UserLogInSerializer(serializers.Serializer):
+    phone_number = PhoneNumberField()
+
+    def validate(self, attrs):
+        try:
+            User.objects.get(phone_number=attrs['phone_number'])
+        except User.DoesNotExist:
+            raise serializers.ValidationError(_('There is no user with this phone number.'))
+        return attrs
+
+    def save(self, **kwargs):
+        phone_number = str(self.validated_data['phone_number'])
+        otp = random.randint(10000, 99999)
+        cache_db.hmset(phone_number, {'otp': otp})
+        return otp
+
+
+class UserConfirmLoginSerializer(serializers.Serializer):
+    phone_number = PhoneNumberField()
+    otp = serializers.IntegerField()
+
+    def validate(self, attrs):
+        user_data = cache_db.hgetall(str(attrs['phone_number']))
+        if not user_data or int(user_data['otp']) != attrs['otp']:
+            raise serializers.ValidationError(_('OTP may be invalid or expired.'))
+        return attrs
+    
+    def save(self, **kwargs):
+        cache_db.delete(str(self.validated_data['phone_number']))
+        user = User.objects.get(phone_number=self.validated_data['phone_number'])
+        return user
 
 
 class RetrieveUserSerializer(serializers.ModelSerializer):

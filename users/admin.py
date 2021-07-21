@@ -10,7 +10,7 @@ class MyUserAdmin(UserAdmin):
     ordering = ['last_name']
     fieldsets = (
         (_('Personal information'), {
-            'fields': ('phone_number', 'first_name', 'last_name', 'date_of_birth', 'image', 'password')
+            'fields': ('phone_number', 'first_name', 'last_name', 'date_of_birth', 'image', 'password', 'default_kindred')
         }),
         (_('Date information'), {
             'fields': ('date_joined', 'last_login')
