@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.1/ref/settings/
 """
 
+from datetime import timedelta
 from pathlib import Path
 import environ
 import os
@@ -53,6 +54,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'phonenumber_field',
+    'location_field.apps.DefaultConfig'
 ]
 
 MIDDLEWARE = [
@@ -178,3 +180,15 @@ AUTH_USER_MODEL = 'users.User'
 PHONENUMBER_DB_FORMAT = 'INTERNATIONAL'
 
 DEFAULT_AUTO_FIELD='django.db.models.AutoField'
+
+LOCATION_FIELD = {
+    'map.provider': 'openstreetmap',
+    'search.provider': 'nominatim',
+}
+
+WEBSOCKET_URL = env('WEBSOCKET_URL')
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=env(var='ACCESS_TOKEN_LIFETIME', cast=int)),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=env(var='REFRESH_TOKEN_LIFETIME', cast=int)),
+}

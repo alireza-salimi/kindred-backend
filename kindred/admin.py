@@ -16,5 +16,10 @@ class KindredAdmin(admin.ModelAdmin):
     inlines = [KindredMemberInline]
 
 
+class LocationAdmin(admin.ModelAdmin):
+    readonly_fields = ['created_at']
+    list_display = ['kindred_member', 'coordinate', 'created_at']
+
 admin.site.register(Kindred, KindredAdmin)
 admin.site.register(KindredMember, KindredMemberAdmin)
+admin.site.register(Location, LocationAdmin)
