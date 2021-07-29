@@ -71,7 +71,8 @@ class CreateLocationSerializer(serializers.ModelSerializer):
         location = Location.objects.create(coordinate=validated_data['coordinate'], kindred_member=kindred_member)
         try:
             socket.publish(f'kindred-{kindred_member.kindred.pk}', json.dumps(
-                RetrieveLocationSerializer(location, context={'request': request}).data
+                RetrieveLocationSerializer(location, context={'request': request}).data,
+                ensure_ascii=False
             ))
         except Exception:
             pass
@@ -135,7 +136,8 @@ class CreateShoppingItemSerializer(serializers.ModelSerializer):
         shopping_item = super().create(validated_data)
         try:
             socket.publish(f'kindred-{validated_data["added_by"].kindred.pk}', json.dumps(
-                RetrieveShoppingItemSerializer(shopping_item, context={'request': request}).data
+                RetrieveShoppingItemSerializer(shopping_item, context={'request': request}).data,
+                ensure_ascii=False
             ))
         except Exception:
             pass
@@ -165,7 +167,8 @@ class EditShoppingItemSerializer(serializers.ModelSerializer):
         shopping_item = super().update(instance, validated_data)
         try:
             socket.publish(f'kindred-{validated_data["kindred"].pk}', json.dumps(
-                RetrieveShoppingItemSerializer(shopping_item, context={'request': request}).data
+                RetrieveShoppingItemSerializer(shopping_item, context={'request': request}).data,
+                ensure_ascii=False
             ))
         except Exception:
             pass
