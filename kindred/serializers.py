@@ -3,6 +3,8 @@ from users.serializers import RetrieveUserSerializer
 from rest_framework import serializers
 from .models import *
 from .apps import socket
+from django.utils.translation import ugettext_lazy as _
+from datetime import datetime
 
 
 class RetrieveKindredSerializer(serializers.ModelSerializer):
@@ -89,3 +91,83 @@ class ListLocationsSerializer(serializers.Serializer):
 
     def save(self, **kwargs):
         return self.validated_data['kindred']
+
+
+class RetrieveShoppingItemSerializer(serializers.ModelSerializer):
+    added_by = RetrieveKindredMemberSerializer()
+    bought_by = RetrieveKindredMemberSerializer()
+    added_at = serializers.SerializerMethodField()
+    bought_at = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ShoppingItem
+        fields = '__all__'
+
+    def get_added_at(self, obj):
+        return obj.added_at.timestamp()
+    
+    def get_bought_at(self, obj):
+        if obj.is_bought:
+            return obj.bought_at.timestamp()
+        else:
+            return None
+
+
+class CreateShoppingItemSerializer(serializers.ModelSerializer):
+    kindred = serializers.PrimaryKeyRelatedField(queryset=Kindred.objects.all())
+
+    class Meta:
+        model = ShoppingItem
+        fields = ['name', 'kindred']
+
+    def validate(self, attrs):
+        request = self.context['request']
+        try:
+            KindredMember.objects.get(user=request.user, kindred=attrs['kindred'])
+        except KindredMember.DoesNotExist:
+            raise serializers.ValidationError(_("You aren't member of this kindred."))
+        return attrs
+    
+    def create(self, validated_data):
+        request = self.context['request']
+        kindred_member = KindredMember.objects.get(user=request.user, kindred=validated_data.pop('kindred'))
+        validated_data['added_by'] = kindred_member
+        shopping_item = super().create(validated_data)
+        try:
+            socket.publish(f'kindred-{validated_data["added_by"].kindred.pk}', json.dumps(
+                RetrieveShoppingItemSerializer(shopping_item, context={'request': request}).data
+            ))
+        except Exception:
+            pass
+        return shopping_item
+
+
+class EditShoppingItemSerializer(serializers.ModelSerializer):
+    kindred = serializers.PrimaryKeyRelatedField(queryset=Kindred.objects.all())
+
+    class Meta:
+        model = ShoppingItem
+        exclude = ('added_by',)
+    
+    def validate(self, attrs):
+        request = self.context['request']
+        try:
+            KindredMember.objects.get(user=request.user, kindred=attrs['kindred'])
+        except KindredMember.DoesNotExist:
+            raise serializers.ValidationError(_("You aren't member of this kindred."))
+        return attrs
+
+    def update(self, instance, validated_data):
+        request = self.context['request']
+        if not instance.is_bought and validated_data.get('is_bought', None):
+            validated_data['bought_by'] = KindredMember.objects.get(user=request.user, kindred=validated_data.pop('kindred'))
+            validated_data['bought_at'] = datetime.utcnow()
+        shopping_item = super().update(instance, validated_data)
+        try:
+            socket.publish(f'kindred-{validated_data["kindred"].pk}', json.dumps(
+                RetrieveShoppingItemSerializer(shopping_item, context={'request': request}).data
+            ))
+        except Exception:
+            pass
+
+        return shopping_item

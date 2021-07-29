@@ -26,5 +26,20 @@ class Location(models.Model):
     coordinate = PlainLocationField(based_fields=['city'], zoom=7, verbose_name=_('Coordinate'))
     created_at = models.DateTimeField(auto_now_add=True, verbose_name=_('Created at'))
     kindred_member = models.ForeignKey(
-        'kindred.KindredMember', on_delete=models.CASCADE, related_name='locations', verbose_name=_('Kindred member')
+        KindredMember, on_delete=models.CASCADE, related_name='locations', verbose_name=_('Kindred member')
     )
+
+
+class ShoppingItem(models.Model):
+    name = models.CharField(max_length=100, verbose_name=_('Name'))
+    added_by = models.ForeignKey(
+        KindredMember, on_delete=models.CASCADE, related_name='added_items', verbose_name=_('Added by'),
+        blank=True, null=True
+    )
+    added_at = models.DateTimeField(auto_now_add=True, verbose_name=_('Added at'))
+    bought_by = models.ForeignKey(
+        KindredMember, on_delete=models.CASCADE, related_name='bought_items', verbose_name=_('Bought by'),
+        blank=True, null=True
+    )
+    bought_at = models.DateTimeField(verbose_name=_('Bought at'), blank=True, null=True)
+    is_bought = models.BooleanField(default=False, verbose_name=_('Is bought'))
