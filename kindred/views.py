@@ -1,7 +1,8 @@
+from kindred_backend.utils import get_tokens_for_user
 from kindred.models import ShoppingItem
-from rest_framework.decorators import action
+from rest_framework.decorators import action, permission_classes
 from rest_framework.response import Response
-from .serializers import CreateLocationSerializer, CreateShoppingItemSerializer, EditShoppingItemSerializer, ListLocationsSerializer, RetrieveLocationSerializer, RetrieveShoppingItemSerializer
+from .serializers import CreateLocationSerializer, CreateShoppingItemSerializer, EditShoppingItemSerializer, InviteMemberSerializer, InvitedMemberConfirmSerializer, ListLocationsSerializer, RetrieveKindredMemberSerializer, RetrieveLocationSerializer, RetrieveShoppingItemSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ViewSet
 from rest_framework import status
@@ -61,5 +62,30 @@ class ShoppingItemViewSet(ViewSet):
                 {
                     'message': _('Shopping item was edited successfully.'),
                     'shopping_item': RetrieveShoppingItemSerializer(shopping_item, context={'request': request}).data
+                }
+            )
+
+
+class kindredViewSet(ViewSet):
+    @action(detail=True, methods=['post'], url_path='invite', url_name='invite', permission_classes=[IsAuthenticated])
+    def invite(self, request, **kwargs):
+        serializer = InviteMemberSerializer(data={**request.data, 'kindred': kwargs['pk']}, context={'request': request})
+        if serializer.is_valid(raise_exception=True):
+            otp = serializer.save()
+            return Response({
+                'message': _("OTP was sent to the invited users's phone number."),
+                'otp': otp
+            })
+
+    @action(detail=False, methods=['post'], url_path='confirm-invite', url_name='confirm-invite')
+    def confirm_invite(self, request):
+        serializer = InvitedMemberConfirmSerializer(data=request.data, context={'request'})
+        if serializer.is_valid(raise_exception=True):
+            kindred_member = serializer.save()
+            return Response(
+                {
+                    'message': _('Your signup process has been completed.'),
+                    'tokens': get_tokens_for_user(kindred_member.user),
+                    'kindred_member': RetrieveKindredMemberSerializer(kindred_member, context={'request': request}).data
                 }
             )

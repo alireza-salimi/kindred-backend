@@ -1,10 +1,13 @@
 import json
+from phonenumber_field.serializerfields import PhoneNumberField
 from users.serializers import RetrieveUserSerializer
 from rest_framework import serializers
 from .models import *
 from .apps import socket
 from django.utils.translation import ugettext_lazy as _
-from datetime import datetime
+from datetime import datetime, timedelta
+import random
+from kindred_backend.settings import cache_db
 
 
 class RetrieveKindredSerializer(serializers.ModelSerializer):
@@ -180,3 +183,48 @@ class EditShoppingItemSerializer(serializers.ModelSerializer):
             pass
 
         return shopping_item
+
+
+class InviteMemberSerializer(serializers.Serializer):
+    kindred = serializers.PrimaryKeyRelatedField(queryset=Kindred.objects.all())
+    phone_number = PhoneNumberField()
+
+    def validate(self, attrs):
+        request = self.context['request']
+        try:
+            KindredMember.objects.get(user=request.user, kindred=attrs['kindred'], is_admin=True)
+        except KindredMember.DoesNotExist:
+            raise serializers.ValidationError(_("You aren't admin of this kindred."))
+        return attrs
+    
+    def save(self, **kwargs):
+         phone_number = str(self.validated_data.pop('phone_number'))
+         otp = random.randint(10000, 99999)
+         cache_db.hmset(phone_number, {'kindred': self.validated_data['kindred'].pk, 'otp': otp, 'invited': 1})
+         cache_db.expire(phone_number, timedelta(minutes=30))
+         return otp
+
+
+class InvitedMemberConfirmSerializer(serializers.Serializer):
+    phone_number = PhoneNumberField()
+    otp = serializers.IntegerField()
+
+    def validate(self, attrs):
+        user_data = cache_db.hgetall(str(attrs['phone_number']))
+        if not user_data or int(user_data['otp']) != attrs['otp'] or not int(user_data['invited']):
+            raise serializers.ValidationError(_('OTP may be invalid or expired.'))
+        return attrs
+    
+    def save(self, **kwargs):
+        user_data = cache_db.hgetall(str(self.validated_data['phone_number']))
+        cache_db.delete(str(self.validated_data['phone_number']))
+        kindred = Kindred.objects.get(pk=user_data['kindred'])
+        user = User.objects.create(
+            phone_number=self.validated_data['phone_number'],
+            default_kindred=kindred
+        )
+        kindred_member = KindredMember.objects.create(
+            user=user,
+            kindred=kindred
+        )
+        return kindred_member
