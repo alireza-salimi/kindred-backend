@@ -70,8 +70,10 @@ class CreateLocationSerializer(serializers.ModelSerializer):
         kindred_member = KindredMember.objects.get(user=request.user, kindred=validated_data['kindred'])
         location = Location.objects.create(coordinate=validated_data['coordinate'], kindred_member=kindred_member)
         try:
-            socket.publish(f'kindred-{kindred_member.kindred.pk}', json.dumps(
-                RetrieveLocationSerializer(location, context={'request': request}).data,
+            socket.publish(f'kindred-{kindred_member.kindred.pk}', json.dumps({
+                **RetrieveLocationSerializer(location, context={'request': request}).data,
+                'action': 'new_location'
+            },
                 ensure_ascii=False
             ))
         except Exception:
@@ -135,8 +137,10 @@ class CreateShoppingItemSerializer(serializers.ModelSerializer):
         validated_data['added_by'] = kindred_member
         shopping_item = super().create(validated_data)
         try:
-            socket.publish(f'kindred-{validated_data["added_by"].kindred.pk}', json.dumps(
-                RetrieveShoppingItemSerializer(shopping_item, context={'request': request}).data,
+            socket.publish(f'kindred-{validated_data["added_by"].kindred.pk}', json.dumps({
+                **RetrieveShoppingItemSerializer(shopping_item, context={'request': request}).data,
+                'action': 'create_shopping_item'
+            },
                 ensure_ascii=False
             ))
         except Exception:
@@ -166,8 +170,10 @@ class EditShoppingItemSerializer(serializers.ModelSerializer):
             validated_data['bought_at'] = datetime.utcnow()
         shopping_item = super().update(instance, validated_data)
         try:
-            socket.publish(f'kindred-{validated_data["kindred"].pk}', json.dumps(
-                RetrieveShoppingItemSerializer(shopping_item, context={'request': request}).data,
+            socket.publish(f'kindred-{validated_data["kindred"].pk}', json.dumps({
+                **RetrieveShoppingItemSerializer(shopping_item, context={'request': request}).data,
+                'action': 'edit_shopping_item'
+            },
                 ensure_ascii=False
             ))
         except Exception:
