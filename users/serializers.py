@@ -46,7 +46,7 @@ class RetrieveUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'phone_number', 'first_name', 'last_name', 'date_of_birth', 'image']
+        fields = ['id', 'phone_number', 'first_name', 'last_name', 'date_of_birth', 'image', 'is_completed']
     
     def get_image(self, obj):
         if obj.image:
