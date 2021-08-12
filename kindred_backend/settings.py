@@ -192,3 +192,5 @@ SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=env(var='ACCESS_TOKEN_LIFETIME', cast=int)),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=env(var='REFRESH_TOKEN_LIFETIME', cast=int)),
 }
+
+DATA_UPLOAD_MAX_MEMORY_SIZE = 50
