@@ -1,8 +1,9 @@
-from .serializers import RetrieveUserSerializer, UserConfirmSignupSerializer, UserSignUpSerializer
+from .serializers import RetrieveUserSerializer, UserCompleteProfileSerializer, UserConfirmSignupSerializer, UserSignUpSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.utils.translation import ugettext_lazy as _
 from kindred_backend.utils import get_tokens_for_user
+from rest_framework.permissions import IsAuthenticated
 
 
 class UserSignUpView(APIView):
@@ -28,3 +29,16 @@ class UserConfirmSingupView(APIView):
                     'user': RetrieveUserSerializer(user, context={'request': request}).data
                 }
             )
+
+
+class UserCompleteProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request):
+        serializer = UserCompleteProfileSerializer(request.user, request.data)
+        if serializer.is_valid(raise_exception=True):
+            user = serializer.save()
+            return Response({
+                'message': _('User profile was completed successfully.'),
+                'user': RetrieveUserSerializer(user, context={'request': request}).data
+            })

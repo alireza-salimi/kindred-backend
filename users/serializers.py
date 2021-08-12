@@ -53,3 +53,14 @@ class RetrieveUserSerializer(serializers.ModelSerializer):
             return self.context['request'].build_absolute_uri(obj.image.url)
         else:
             return None
+
+
+class UserCompleteProfileSerializer(serializers.ModelSerializer):
+    first_name = serializers.CharField()
+    last_name = serializers.CharField()
+    date_of_birth = serializers.DateField()
+    image = serializers.ImageField()
+    
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'date_of_birth', 'image']

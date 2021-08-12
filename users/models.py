@@ -29,11 +29,11 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractUser):
-    first_name = models.CharField(max_length=200, verbose_name=_('First name'), blank=True, null=True)
-    last_name = models.CharField(max_length=200, verbose_name=_('Last name'), blank=True, null=True)
-    date_of_birth = models.DateField(verbose_name=_('Date of birth'), null=True, blank=True)
+    first_name = models.CharField(max_length=200, verbose_name=_('First name'), null=True)
+    last_name = models.CharField(max_length=200, verbose_name=_('Last name'), null=True)
+    date_of_birth = models.DateField(verbose_name=_('Date of birth'), null=True)
     phone_number = PhoneNumberField(unique=True, verbose_name=_('Phone number'))
-    image = models.ImageField(upload_to='images/', verbose_name=_('Image'), blank=True, null=True)
+    image = models.ImageField(upload_to='images/', verbose_name=_('Image'), null=True)
     default_kindred = models.ForeignKey(
         'kindred.Kindred', on_delete=models.SET_NULL, related_name='default_for_users',
         blank=True, null=True, verbose_name=_('Default kindred')
