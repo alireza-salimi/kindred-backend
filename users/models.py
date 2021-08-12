@@ -38,6 +38,7 @@ class User(AbstractUser):
         'kindred.Kindred', on_delete=models.SET_NULL, related_name='default_for_users',
         blank=True, null=True, verbose_name=_('Default kindred')
     )
+    is_completed = models.BooleanField(default=False, verbose_name=_('Is completed'))
     
     USERNAME_FIELD = 'phone_number'
     REQUIRED_FIELDS = ['first_name', 'last_name']

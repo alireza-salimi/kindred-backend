@@ -60,7 +60,13 @@ class UserCompleteProfileSerializer(serializers.ModelSerializer):
     last_name = serializers.CharField()
     date_of_birth = serializers.DateField()
     image = serializers.ImageField()
-    
+
     class Meta:
         model = User
         fields = ['first_name', 'last_name', 'date_of_birth', 'image']
+
+    def update(self, instance, validated_data):
+        user = super().update(instance, validated_data)
+        user.is_completed = True
+        user.save()
+        return user
