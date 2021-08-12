@@ -14,6 +14,7 @@ class KindredAdmin(admin.ModelAdmin):
     list_display = ['name']
     search_fields = ['name']
     inlines = [KindredMemberInline]
+    readonly_fields = ['unique_id']
 
 
 class LocationAdmin(admin.ModelAdmin):

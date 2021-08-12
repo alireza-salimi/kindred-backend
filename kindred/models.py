@@ -2,11 +2,13 @@ from django.db import models
 from users.models import User
 from django.utils.translation import ugettext_lazy as _
 from location_field.models.plain import PlainLocationField
+import uuid
 
 
 class Kindred(models.Model):
     name = models.CharField(max_length=100, verbose_name=_('Name'))
     image = models.ImageField(upload_to='kindred/images/', verbose_name=_('Image'), blank=True, null=True)
+    unique_id = models.CharField(max_length=8, verbose_name=_('Unique ID'), unique=True, editable=False)
 
     def __str__(self):
         return self.name

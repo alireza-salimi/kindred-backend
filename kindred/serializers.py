@@ -5,9 +5,10 @@ from rest_framework import serializers
 from .models import *
 from .apps import socket
 from django.utils.translation import ugettext_lazy as _
-from datetime import datetime, timedelta
-import random
+from datetime import datetime
 from kindred_backend.settings import cache_db
+import random
+import string
 
 
 class RetrieveKindredSerializer(serializers.ModelSerializer):
@@ -15,7 +16,7 @@ class RetrieveKindredSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Kindred
-        fields = '__all__'
+        exclude = ('unique_id',)
 
     def get_image(self, obj):
         if obj.image:
@@ -191,6 +192,10 @@ class InviteMemberSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         request = self.context['request']
+        invited_user = User.objects.filter(phone_number=attrs['phone_number']).first()
+        if invited_user:
+            if KindredMember.objects.filter(user=invited_user, kindred=attrs['kindred']):
+                raise serializers.ValidationError(_('This phone number already exists in this kindred.'))
         try:
             KindredMember.objects.get(user=request.user, kindred=attrs['kindred'], is_admin=True)
         except KindredMember.DoesNotExist:
@@ -198,33 +203,74 @@ class InviteMemberSerializer(serializers.Serializer):
         return attrs
     
     def save(self, **kwargs):
-         phone_number = str(self.validated_data.pop('phone_number'))
-         otp = random.randint(10000, 99999)
-         cache_db.hmset(phone_number, {'kindred': self.validated_data['kindred'].pk, 'otp': otp, 'invited': 1})
-         cache_db.expire(phone_number, timedelta(minutes=30))
-         return otp
+        kindred = self.validated_data['kindred']
+        phone_number = str(self.validated_data.pop('phone_number'))
+        cache_db.sadd(kindred.unique_id, phone_number)
+        return kindred.unique_id
 
 
 class InvitedMemberConfirmSerializer(serializers.Serializer):
     phone_number = PhoneNumberField()
-    otp = serializers.IntegerField()
+    invitation_code = serializers.CharField()
 
     def validate(self, attrs):
-        user_data = cache_db.hgetall(str(attrs['phone_number']))
-        if not user_data or int(user_data['otp']) != attrs['otp'] or not int(user_data['invited']):
-            raise serializers.ValidationError(_('OTP may be invalid or expired.'))
+        try:
+            user = User.objects.get(phone_number=attrs['phone_number'])
+        except User.DoesNotExist:
+            raise serializers.ValidationError(_('There is no user with this phone number.'))
+        if not user.is_completed:
+            raise serializers.ValidationError(_("You haven't completed your profile."))
+        try:
+            kindred = Kindred.objects.get(unique_id=attrs['invitation_code'])
+        except Kindred.DoesNotExist:
+            raise serializers.ValidationError(_('There is no kindred with this id.'))
+        kindred_member_exists = KindredMember.objects.filter(user=user, kindred=kindred).exists()
+        if kindred_member_exists:
+            raise serializers.ValidationError(_('You are already member of this kindred.'))
+        kindred_invited_members = cache_db.smembers(attrs['invitation_code'])
+        if not kindred_invited_members or str(attrs['phone_number']) not in kindred_invited_members:
+            raise serializers.ValidationError(_('Invitation code is invalid'))
         return attrs
     
     def save(self, **kwargs):
-        user_data = cache_db.hgetall(str(self.validated_data['phone_number']))
-        cache_db.delete(str(self.validated_data['phone_number']))
-        kindred = Kindred.objects.get(pk=user_data['kindred'])
-        user = User.objects.create(
-            phone_number=self.validated_data['phone_number'],
-            default_kindred=kindred
+        
+        cache_db.srem(self.validated_data['invitation_code'], str(self.validated_data['phone_number']))
+        kindred = Kindred.objects.get(unique_id=self.validated_data['invitation_code'])
+        user = User.objects.get(
+            phone_number=self.validated_data['phone_number']
         )
         kindred_member = KindredMember.objects.create(
             user=user,
             kindred=kindred
         )
+        if not user.default_kindred:
+            user.default_kindred = kindred
+            user.save()
         return kindred_member
+
+
+class CreateKindredSerializer(serializers.ModelSerializer):
+
+    def validate(self, attrs):
+        user = self.context['request'].user
+        if not user.is_completed:
+            raise serializers.ValidationError(_('Please complete your profile first.'))
+        return attrs
+
+    class Meta:
+        model = Kindred
+        fields = ['name', 'image']
+    
+    def create(self, validated_data):
+        user = self.context['request'].user
+        letters = string.ascii_lowercase + string.digits
+        result_str = ''.join(random.choice(letters) for i in range(8))
+        while result_str in Kindred.objects.values_list('unique_id', flat=True):
+            result_str = ''.join(random.choice(letters) for i in range(8))
+        validated_data['unique_id'] = result_str
+        kindred = super().create(validated_data)
+        if not user.default_kindred:
+            user.default_kindred = kindred
+            user.save()
+        KindredMember.objects.create(user=user, kindred=kindred, is_admin=True)
+        return kindred

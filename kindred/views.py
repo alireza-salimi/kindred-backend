@@ -2,7 +2,7 @@ from kindred_backend.utils import get_tokens_for_user
 from kindred.models import ShoppingItem
 from rest_framework.decorators import action, permission_classes
 from rest_framework.response import Response
-from .serializers import CreateLocationSerializer, CreateShoppingItemSerializer, EditShoppingItemSerializer, InviteMemberSerializer, InvitedMemberConfirmSerializer, ListLocationsSerializer, RetrieveKindredMemberSerializer, RetrieveLocationSerializer, RetrieveShoppingItemSerializer
+from .serializers import CreateKindredSerializer, CreateLocationSerializer, CreateShoppingItemSerializer, EditShoppingItemSerializer, InviteMemberSerializer, InvitedMemberConfirmSerializer, ListLocationsSerializer, RetrieveKindredMemberSerializer, RetrieveKindredSerializer, RetrieveLocationSerializer, RetrieveShoppingItemSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ViewSet
 from rest_framework import status
@@ -67,17 +67,28 @@ class ShoppingItemViewSet(ViewSet):
 
 
 class kindredViewSet(ViewSet):
+    permission_classes = [IsAuthenticated]
+
+    def create(self, request):
+        serializer = CreateKindredSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid(raise_exception=True):
+            kindred = serializer.save()
+            return Response({
+                'message': 'Kindred was created successfully.',
+                'kindred': RetrieveKindredSerializer(kindred, context={'request': request}).data
+            })
+    
     @action(detail=True, methods=['post'], url_path='invite', url_name='invite', permission_classes=[IsAuthenticated])
     def invite(self, request, **kwargs):
         serializer = InviteMemberSerializer(data={**request.data, 'kindred': kwargs['pk']}, context={'request': request})
         if serializer.is_valid(raise_exception=True):
-            otp = serializer.save()
+            invitation_code = serializer.save()
             return Response({
-                'message': _("OTP was sent to the invited users's phone number."),
-                'otp': otp
+                'message': _("Invitation code was sent to the invited users's phone number."),
+                'invitation_code': invitation_code
             })
 
-    @action(detail=False, methods=['post'], url_path='confirm-invite', url_name='confirm-invite')
+    @action(detail=False, methods=['post'], url_path='confirm-invite', url_name='confirm-invite', permission_classes=[])
     def confirm_invite(self, request):
         serializer = InvitedMemberConfirmSerializer(data=request.data, context={'request'})
         if serializer.is_valid(raise_exception=True):
