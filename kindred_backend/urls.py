@@ -22,5 +22,6 @@ from kindred_backend import settings
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/users/', include('users.urls')),
-    path('api/kindreds/', include('kindred.urls'))
+    path('api/kindreds/', include('kindred.urls')),
+    path('api/messaging/', include('messaging.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'users',
     'kindred',
+    'messaging',
     'django_rq',
     'rest_framework',
     'corsheaders',
