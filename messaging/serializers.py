@@ -3,7 +3,7 @@ from rest_framework import serializers
 from .models import Message, DefaultMessage
 from kindred.models import KindredMember
 from django.utils.translation import ugettext_lazy as _
-from kindred.serializers import RetrieveKindredMemberSerializer
+from kindred.serializers import RetrieveKindredMemberSerializer, RetrieveKindredSerializer
 from kindred.apps import socket
 
 
@@ -73,3 +73,30 @@ class RetrieveChatMessageSerializer(serializers.ModelSerializer):
     
     def get_created_at(self, obj):
         return obj.created_at.timestamp()
+
+
+class CreateDefaultMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DefaultMessage
+        fields = '__all__'
+    
+    def validate(self, attrs):
+        user = self.context['request'].user
+        try:
+            KindredMember.objects.get(user=user, kindred=attrs['kindred'])
+        except KindredMember.DoesNotExist:
+            raise serializers.ValidationError(_("You aren't member of this kindred."))
+        return attrs
+
+
+class RetrieveDefaultMessageSerializer(serializers.ModelSerializer):
+    kindred = RetrieveKindredSerializer()
+    class Meta:
+        model = DefaultMessage
+        fields = '__all__'
+
+
+class UpdateDefaultMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DefaultMessage
+        exclude = ('kindred',)
