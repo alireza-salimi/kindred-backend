@@ -1,8 +1,8 @@
 from kindred_backend.utils import get_tokens_for_user
-from kindred.models import ShoppingItem
+from kindred.models import Kindred, KindredMember, ShoppingItem
 from rest_framework.decorators import action, permission_classes
 from rest_framework.response import Response
-from .serializers import CreateKindredSerializer, CreateLocationSerializer, CreateShoppingItemSerializer, EditShoppingItemSerializer, InviteMemberSerializer, InvitedMemberConfirmSerializer, ListLocationsSerializer, RetrieveKindredMemberSerializer, RetrieveKindredSerializer, RetrieveLocationSerializer, RetrieveShoppingItemSerializer
+from .serializers import CreateKindredSerializer, CreateLocationSerializer, CreateShoppingItemSerializer, EditShoppingItemSerializer, InviteMemberSerializer, InvitedMemberConfirmSerializer, ListKindredMembersSerializer, ListLocationsSerializer, RetrieveKindredMemberSerializer, RetrieveKindredSerializer, RetrieveLocationSerializer, RetrieveShoppingItemSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ViewSet
 from rest_framework import status
@@ -100,3 +100,27 @@ class kindredViewSet(ViewSet):
                     'kindred_member': RetrieveKindredMemberSerializer(kindred_member, context={'request': request}).data
                 }
             )
+
+    @action(detail=True, methods=['get'], url_path='members', url_name='members')
+    def list_members(self, request, **kwargs):
+        try:
+            kindred = Kindred.objects.get(pk=kwargs['pk'])
+        except Kindred.DoesNotExist:
+            return Response({
+                'message': _("Kindred with given id doesn't exist.")
+            },
+            status=status.HTTP_404_NOT_FOUND
+            )
+        kindred_member = KindredMember.objects.filter(user=request.user, kindred=kindred)
+        if not kindred_member:
+            return Response({
+                'message': _("You aren't member of this kindred.")
+            },
+            status=status.HTTP_400_BAD_REQUEST
+            )
+        serializer = ListKindredMembersSerializer(
+            KindredMember.objects.filter(kindred=kindred),
+            many=True,
+            context={'request': request}
+        )
+        return Response(serializer.data)

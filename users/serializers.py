@@ -43,16 +43,24 @@ class UserConfirmSignupSerializer(serializers.Serializer):
 
 class RetrieveUserSerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()
+    kindreds = serializers.SerializerMethodField()
+
 
     class Meta:
         model = User
-        fields = ['id', 'phone_number', 'first_name', 'last_name', 'date_of_birth', 'image', 'is_completed']
+        fields = ['id', 'phone_number', 'first_name', 'last_name', 'date_of_birth', 'image', 'is_completed', 'kindreds']
     
     def get_image(self, obj):
         if obj.image:
             return self.context['request'].build_absolute_uri(obj.image.url)
         else:
             return None
+
+    def get_kindreds(self, obj):
+        from kindred.serializers import RetrieveKindredSerializer
+        kindred_members = KindredMember.objects.filter(user=obj).values_list('kindred', flat=True)
+        kindreds = Kindred.objects.filter(pk__in=kindred_members)
+        return RetrieveKindredSerializer(kindreds, many=True, context=self.context).data
 
 
 class UserCompleteProfileSerializer(serializers.ModelSerializer):

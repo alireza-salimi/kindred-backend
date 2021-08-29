@@ -274,3 +274,16 @@ class CreateKindredSerializer(serializers.ModelSerializer):
             user.save()
         KindredMember.objects.create(user=user, kindred=kindred, is_admin=True)
         return kindred
+
+
+class ListKindredMembersSerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()
+
+    class Meta:
+        model = KindredMember
+        exclude = ('kindred',)
+
+    def get_user(self, obj):
+        data = RetrieveUserSerializer(obj.user, context=self.context).data
+        del data['kindreds']
+        return data
