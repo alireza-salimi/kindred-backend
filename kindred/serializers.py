@@ -287,3 +287,44 @@ class ListKindredMembersSerializer(serializers.ModelSerializer):
         data = RetrieveUserSerializer(obj.user, context=self.context).data
         del data['kindreds']
         return data
+
+
+class ChangeKindredAdminSerializer(serializers.Serializer):
+    kindred_member = serializers.PrimaryKeyRelatedField(queryset=KindredMember.objects.all())
+    kindred = serializers.PrimaryKeyRelatedField(queryset=Kindred.objects.all())
+
+    def validate(self, attrs):
+        request = self.context['request']
+        kindred_member = KindredMember.objects.filter(user=request.user, kindred=attrs['kindred'], is_admin=True).first()
+        if not kindred_member:
+            raise serializers.ValidationError(_("You aren't admin of this kindred."))
+        return attrs
+    
+    def save(self, **kwargs):
+        user = self.context['request'].user
+        old_admin = KindredMember.objects.get(kindred=self.validated_data['kindred'], user=user)
+        old_admin.is_admin = False
+        old_admin.save()
+        new_admin = self.validated_data['kindred_member']
+        new_admin.is_admin = True
+        new_admin.save()
+        return new_admin
+
+
+class RemoveKindredMemberSerializer(serializers.Serializer):
+    kindred_member = serializers.PrimaryKeyRelatedField(queryset=KindredMember.objects.all())
+    kindred = serializers.PrimaryKeyRelatedField(queryset=Kindred.objects.all())
+
+    def validate(self, attrs):
+        request = self.context['request']
+        kindred_member = KindredMember.objects.filter(user=request.user, kindred=attrs['kindred']).first()
+        if not kindred_member:
+            raise serializers.ValidationError(_("You aren't member of this kindred."))
+        if kindred_member == attrs['kindred_member'] and kindred_member.is_admin:
+            raise serializers.ValidationError(_("You can't remove yourself while you're admin. Change the admin first."))
+        if kindred_member != attrs['kindred_member'] and not kindred_member.is_admin:
+            raise serializers.ValidationError(_("You aren't admin of this kindred."))
+        return attrs
+    
+    def save(self, **kwargs):
+        self.validated_data['kindred_member'].delete()

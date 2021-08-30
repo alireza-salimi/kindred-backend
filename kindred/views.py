@@ -2,7 +2,7 @@ from kindred_backend.utils import get_tokens_for_user
 from kindred.models import Kindred, KindredMember, ShoppingItem
 from rest_framework.decorators import action, permission_classes
 from rest_framework.response import Response
-from .serializers import CreateKindredSerializer, CreateLocationSerializer, CreateShoppingItemSerializer, EditShoppingItemSerializer, InviteMemberSerializer, InvitedMemberConfirmSerializer, ListKindredMembersSerializer, ListLocationsSerializer, RetrieveKindredMemberSerializer, RetrieveKindredSerializer, RetrieveLocationSerializer, RetrieveShoppingItemSerializer
+from .serializers import ChangeKindredAdminSerializer, CreateKindredSerializer, CreateLocationSerializer, CreateShoppingItemSerializer, EditShoppingItemSerializer, InviteMemberSerializer, InvitedMemberConfirmSerializer, ListKindredMembersSerializer, ListLocationsSerializer, RemoveKindredMemberSerializer, RetrieveKindredMemberSerializer, RetrieveKindredSerializer, RetrieveLocationSerializer, RetrieveShoppingItemSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ViewSet
 from rest_framework import status
@@ -124,3 +124,28 @@ class kindredViewSet(ViewSet):
             context={'request': request}
         )
         return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'], url_path='change-admin', url_name='change-admin')
+    def change_admin(self, request, **kwargs):
+        serializer = ChangeKindredAdminSerializer(
+            data={'kindred': kwargs['pk'], **request.data}, context={'request': request}
+        )
+        if serializer.is_valid(raise_exception=True):
+            new_admin = serializer.save()
+            return Response(
+                {
+                    'message': _('Admin was changed successfully.'),
+                    'kindred_member': RetrieveKindredMemberSerializer(new_admin, context={'request': request}).data
+                }
+            )
+    
+    @action(detail=True, methods=['post'], url_path='remove-member', url_name='remove-member')
+    def remove_member(self, request, **kwargs):
+        serializer = RemoveKindredMemberSerializer(
+            data={'kindred': kwargs['pk'], **request.data}, context={'request': request}
+        )
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response({
+                'message': _('Kindred member was successfully removed from kindred.')
+            })
