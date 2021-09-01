@@ -328,3 +328,19 @@ class RemoveKindredMemberSerializer(serializers.Serializer):
     
     def save(self, **kwargs):
         self.validated_data['kindred_member'].delete()
+
+
+class ListShoppingItemsSerializer(serializers.Serializer):
+    kindred = serializers.PrimaryKeyRelatedField(queryset=Kindred.objects.all())
+
+    def validate(self, attrs):
+        user = self.context['request'].user
+        try:
+            KindredMember.objects.get(user=user, kindred=attrs['kindred'])
+        except KindredMember.DoesNotExist:
+            raise serializers.ValidationError(_("You aren't member of this kindred."))
+        return attrs
+    
+    def save(self):
+        shopping_items = ShoppingItem.objects.filter(added_by__kindred=self.validated_data['kindred']).order_by('-added_at')
+        return shopping_items

@@ -42,3 +42,12 @@ class UserCompleteProfileView(APIView):
                 'message': _('User profile was completed successfully.'),
                 'user': RetrieveUserSerializer(user, context={'request': request}).data
             })
+
+
+class UserDataView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        serializer = RetrieveUserSerializer(user, context={'request': request})
+        return Response(serializer.data)

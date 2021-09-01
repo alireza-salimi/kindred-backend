@@ -2,7 +2,7 @@ from kindred_backend.utils import get_tokens_for_user
 from kindred.models import Kindred, KindredMember, ShoppingItem
 from rest_framework.decorators import action, permission_classes
 from rest_framework.response import Response
-from .serializers import ChangeKindredAdminSerializer, CreateKindredSerializer, CreateLocationSerializer, CreateShoppingItemSerializer, EditShoppingItemSerializer, InviteMemberSerializer, InvitedMemberConfirmSerializer, ListKindredMembersSerializer, ListLocationsSerializer, RemoveKindredMemberSerializer, RetrieveKindredMemberSerializer, RetrieveKindredSerializer, RetrieveLocationSerializer, RetrieveShoppingItemSerializer
+from .serializers import ChangeKindredAdminSerializer, CreateKindredSerializer, CreateLocationSerializer, CreateShoppingItemSerializer, EditShoppingItemSerializer, InviteMemberSerializer, InvitedMemberConfirmSerializer, ListKindredMembersSerializer, ListLocationsSerializer, ListShoppingItemsSerializer, RemoveKindredMemberSerializer, RetrieveKindredMemberSerializer, RetrieveKindredSerializer, RetrieveLocationSerializer, RetrieveShoppingItemSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ViewSet
 from rest_framework import status
@@ -64,6 +64,12 @@ class ShoppingItemViewSet(ViewSet):
                     'shopping_item': RetrieveShoppingItemSerializer(shopping_item, context={'request': request}).data
                 }
             )
+    def list(self, request):
+        kindred = request.GET.get('kindred', None)
+        serializer = ListShoppingItemsSerializer(data={'kindred': kindred}, context={'request': request})
+        if serializer.is_valid(raise_exception=True):
+            shopping_items = serializer.save()
+            return Response(RetrieveShoppingItemSerializer(shopping_items, many=True, context={'request': request}).data)
 
 
 class kindredViewSet(ViewSet):
