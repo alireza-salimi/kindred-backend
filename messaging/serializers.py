@@ -76,7 +76,8 @@ class RetrieveChatMessageSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         result = super().to_representation(instance)
-        result['kindred_member'] = self.context['kindred_member']
+        
+        result['sent_from_me'] = True if instance.sent_from.pk == self.context['kindred_member'] else False
         return result
 
 class CreateDefaultMessageSerializer(serializers.ModelSerializer):
