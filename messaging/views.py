@@ -1,3 +1,4 @@
+from kindred.serializers import RetrieveKindredMemberSerializer
 from kindred.models import Kindred, KindredMember
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ViewSet
@@ -90,12 +91,12 @@ class PreviewChatsView(APIView):
             messages = Message.objects.filter(
                 Q(sent_to=kindred_member, sent_from=km) | Q(sent_to=km, sent_from=kindred_member)
             )
-            if messages:
-                message = messages.order_by('-created_at').first()
-                result.append(
-                    RetrieveMessageSerializer(message, context={'request': request}).data
-                )
-        return Response(sorted(result, key=lambda x: x['created_at'], reverse=True))
+            message = messages.order_by('-created_at').first()
+            result.append({
+                'message': RetrieveMessageSerializer(message, context={'request': request}).data if message else None,
+                'kindred_member': RetrieveKindredMemberSerializer(km, context={'request': request}).data
+            })
+        return Response(sorted(result, key=lambda x: x['message']['created_at'] if x['message'] else x['kindred_member']['id'], reverse=True))
 
 
 class DefaultMessageViewSet(ViewSet):
