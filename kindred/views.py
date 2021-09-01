@@ -18,7 +18,7 @@ class LocationViewSet(ViewSet):
             location = serializer.save()
             return Response({
                 'message': _('Location was created successfully.'),
-                'location': RetrieveLocationSerializer(location, context={'reuqest': request}).data
+                'location': RetrieveLocationSerializer(location, context={'request': request}).data
             })
     @action(detail=False, methods=['post'], url_path='last-locations', url_name='last-locations')
     def last_locations(self, request, **kwargs):
@@ -27,7 +27,8 @@ class LocationViewSet(ViewSet):
             kindred = serializer.save()
             locations = []
             for member in kindred.members.all():
-                locations.append(RetrieveLocationSerializer(member.locations.last(), context={'request': request}).data)
+                if member.user.locations.last():
+                    locations.append(RetrieveLocationSerializer(member.user.locations.last(), context={'request': request}).data)
             return Response(locations)
 
 

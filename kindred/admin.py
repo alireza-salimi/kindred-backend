@@ -19,7 +19,7 @@ class KindredAdmin(admin.ModelAdmin):
 
 class LocationAdmin(admin.ModelAdmin):
     readonly_fields = ['created_at']
-    list_display = ['kindred_member', 'coordinate', 'created_at']
+    list_display = ['user', 'coordinate', 'created_at']
 
 
 class ShoppingItemAdmin(admin.ModelAdmin):

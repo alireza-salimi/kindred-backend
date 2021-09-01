@@ -9,6 +9,7 @@ from datetime import datetime
 from kindred_backend.settings import cache_db
 import random
 import string
+import pytz
 
 
 class RetrieveKindredSerializer(serializers.ModelSerializer):
@@ -45,7 +46,7 @@ class RetrieveKindredMemberSerializer(serializers.ModelSerializer):
 
 class RetrieveLocationSerializer(serializers.ModelSerializer):
     created_at = serializers.SerializerMethodField()
-    kindred_member = RetrieveKindredMemberSerializer()
+    user = RetrieveUserSerializer()
 
     class Meta:
         model = Location
@@ -55,26 +56,15 @@ class RetrieveLocationSerializer(serializers.ModelSerializer):
         return obj.created_at.timestamp()
 
 class CreateLocationSerializer(serializers.ModelSerializer):
-    kindred = serializers.PrimaryKeyRelatedField(queryset=Kindred.objects.all())
-
     class Meta:
         model = Location
-        fields = ['coordinate', 'kindred']
-
-    def validate(self, attrs):
-        request = self.context['request']
-        try:
-            KindredMember.objects.get(user=request.user, kindred=attrs['kindred'])
-        except KindredMember.DoesNotExist:
-            raise serializers.ValidationError(_("You aren't member of this kindred."))
-        return attrs
+        fields = ['coordinate']
 
     def create(self, validated_data):
         request = self.context['request']
-        kindred_member = KindredMember.objects.get(user=request.user, kindred=validated_data['kindred'])
-        location = Location.objects.create(coordinate=validated_data['coordinate'], kindred_member=kindred_member)
+        location = Location.objects.create(coordinate=validated_data['coordinate'], user=request.user)
         try:
-            socket.publish(f'kindred-{kindred_member.kindred.pk}', json.dumps({
+            socket.publish(f'user-{request.user.pk}', json.dumps({
                 **RetrieveLocationSerializer(location, context={'request': request}).data,
                 'action': 'new_location'
             },
@@ -171,7 +161,7 @@ class EditShoppingItemSerializer(serializers.ModelSerializer):
         request = self.context['request']
         if not instance.is_bought and validated_data.get('is_bought', None):
             validated_data['bought_by'] = KindredMember.objects.get(user=request.user, kindred=validated_data.pop('kindred'))
-            validated_data['bought_at'] = datetime.utcnow()
+            validated_data['bought_at'] = datetime.utcnow().replace(tzinfo=pytz.UTC)
         shopping_item = super().update(instance, validated_data)
         try:
             socket.publish(f'kindred-{validated_data["kindred"].pk}', json.dumps({

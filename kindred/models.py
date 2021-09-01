@@ -27,8 +27,8 @@ class KindredMember(models.Model):
 class Location(models.Model):
     coordinate = PlainLocationField(based_fields=['city'], zoom=7, verbose_name=_('Coordinate'))
     created_at = models.DateTimeField(auto_now_add=True, verbose_name=_('Created at'))
-    kindred_member = models.ForeignKey(
-        KindredMember, on_delete=models.CASCADE, related_name='locations', verbose_name=_('Kindred member')
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='locations', verbose_name=_('User')
     )
 
 
