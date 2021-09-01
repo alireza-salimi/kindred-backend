@@ -74,6 +74,10 @@ class RetrieveChatMessageSerializer(serializers.ModelSerializer):
     def get_created_at(self, obj):
         return obj.created_at.timestamp()
 
+    def to_representation(self, instance):
+        result = super().to_representation(instance)
+        result['kindred_member'] = self.context['kindred_member']
+        return result
 
 class CreateDefaultMessageSerializer(serializers.ModelSerializer):
     class Meta:

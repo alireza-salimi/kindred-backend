@@ -54,9 +54,9 @@ class ListChatMessagesView(APIView):
             Q(sent_from=user, sent_to=kindred_member) | Q(sent_from=kindred_member, sent_to=user)
         ).order_by('-created_at')
         paginator = PageNumberPagination()
-        paginator.page_size = 5
+        paginator.page_size = 500
         result_page = paginator.paginate_queryset(messages, request)
-        serializer = RetrieveChatMessageSerializer(result_page, many=True)
+        serializer = RetrieveChatMessageSerializer(result_page, many=True, context={'kindred_member': user.pk})
         return paginator.get_paginated_response(serializer.data)
 
 
