@@ -55,7 +55,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'phonenumber_field',
-    'location_field.apps.DefaultConfig'
+    'location_field.apps.DefaultConfig',
+    'django_extensions',
 ]
 
 MIDDLEWARE = [

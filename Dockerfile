@@ -10,7 +10,7 @@ RUN apt -y update && apt -y install gettext
 RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
 RUN echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" | tee  /etc/apt/sources.list.d/pgdg.list
 RUN echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg-testing main 13" | tee  /etc/apt/sources.list.d/pgdg-testing.list
-RUN apt -y update && apt -y install postgresql-client-13
+RUN apt -y update && apt -y install postgresql-client-13 && apt -y install graphviz
 COPY . /code/
 RUN chmod +x /code/entrypoint.sh
 ENTRYPOINT ["sh", "/code/entrypoint.sh"]
