@@ -63,15 +63,16 @@ class CreateLocationSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         request = self.context['request']
         location = Location.objects.create(coordinate=validated_data['coordinate'], user=request.user)
-        try:
-            socket.publish(f'user-{request.user.pk}', json.dumps({
-                **RetrieveLocationSerializer(location, context={'request': request}).data,
-                'action': 'new_location'
-            },
-                ensure_ascii=False
-            ))
-        except Exception:
-            pass
+        for member in request.user.members.all():
+            try:
+                socket.publish(f'kindred-{member.kindred.pk}', json.dumps({
+                    **RetrieveLocationSerializer(location, context={'request': request}).data,
+                    'action': 'new_location'
+                },
+                    ensure_ascii=False
+                ))
+            except Exception:
+                pass
         return location
 
 
